@@ -1,0 +1,111 @@
+<!doctype html>
+<html>
+<head>
+  <title>Nidenticon</title>
+  <meta charset="utf-8">
+<body>
+  <input type="text" id="input"></input>
+  <button type="button" id="button" onclick="generate()">YES</button>
+  <div id="generated"></div>
+  <script>
+    //  it can just be called as a function, or it can be seeded
+    var sinrand = (function() {
+      function getSeed(s) {
+        if(typeof(s) === 'number') return s;
+        else if(typeof(s) === 'string') return hashString(s);
+        else throw new Error('not sure what to do with seed: ' + s);
+      }
+      // Hashcode of strings.
+      //  http://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/
+      function hashString(str) {
+        var hash = 0, i, chr, len;
+        if (str.length == 0) return hash;
+        for (i = 0, len = str.length; i < len; i++) {
+          chr   = str.charCodeAt(i);
+          hash  = ((hash << 5) - hash) + chr;
+          hash |= 0; // Convert to 32bit integer
+        }
+        return hash;
+      }
+      function SinRand(s) {
+        var seed = getSeed(s);
+        var obj = function() {
+          var x = Math.sin(seed++) * 10000;
+          x -= Math.floor(x);
+          if(arguments.length === 0) return x;
+          if(arguments.length === 1 && (arguments[0] instanceof Array)) return arguments[0][Math.floor(x*arguments[0].length)];
+          if(arguments.length === 1) return Math.floor(x*arguments[0]);
+          if(arguments.length === 2) return Math.floor(x*(arguments[1]+1-arguments[0]))+arguments[0];
+          else throw new Error('invalid arguments for random generator.');
+        };
+        obj.seed = function(s) { seed = getSeed(s); };
+        obj.create = function(s) {
+          return SinRand((s !== undefined)? s: obj());
+        };
+        return obj;
+      };
+      return SinRand(Math.random());
+    })();
+    
+    document.getElementById('input').addEventListener('keypress', function(e) {
+      if(e.keyCode === 13) {
+        generate();
+        e.preventDefault();
+      }
+    });
+    function generate(text) {
+      text = text || document.getElementById('input').value || undefined;
+      var can = document.createElement('canvas');
+      can.style.border = "solid 1px";
+      can.style.margin = "2px";
+      var ctx = can.getContext('2d');
+      
+      var width = 17;
+      var height = 11;
+      var steps = 200;
+      var scale = Math.floor(100/width);
+      
+      can.width = width * scale;
+      can.height = height * scale;
+      var board = new Uint8Array(width * height);
+      var rand = sinrand.create(text);
+      var numColors = 2;
+      var x = Math.floor((width-1)/2), y = Math.floor((height-1)/2);
+      var starti = x+y*width;
+      for(var stepsLeft = steps; stepsLeft > 0; --stepsLeft) {
+        x = Math.max(0, Math.min(width-1, x+rand([-1, 1])));
+        y = Math.max(0, Math.min(height-1, y+rand([-1, 1])));
+        ++board[x+y*width];
+        if(board[x+y*width]>=numColors-1) ++numColors;
+        /*if(!rand(100) && stepsLeft > 1) {
+          x = rand(width);
+          y = rand(height);
+        }*/
+      }
+      var endi = x+y*width;
+      var colors = [];
+      var colorRand = rand(215, 390);
+      for(var i = 0; i <= 1; i += 1/(numColors-1))
+        colors.push('hsl('+(i*360+colorRand)%360+','+(Math.pow(i,1.5)*50+50)+'%,'+(Math.pow(i,1.7)*-40+90)+'%)');
+      console.log(colors);
+      colors[0] = 'black';
+      
+      for(var i = 0; i < width * height; ++i) {
+        if(i === starti) ctx.fillStyle = colors[numColors-1];
+        else if(i === endi) ctx.fillStyle = 'black';
+        else ctx.fillStyle = colors[board[i]];
+        ctx.fillRect((i%width) * scale, Math.floor(i/width) * scale, scale, scale);
+      }
+      
+      document.getElementById('generated').appendChild(can);
+    }
+    
+    generate('nigel@nigelnelson.me');
+    generate('chalk');
+    generate('zone');
+    generate('wander');
+    generate('ME');
+    for(var i = 0; i < 15; ++i) generate();
+  </script>
+</body>
+</html>
