@@ -4,9 +4,9 @@ function makeIcon(text) {
     can.style.margin = "2px";
     var ctx = can.getContext('2d');
     
-    var width = 17;
-    var height = 11;
-    var steps = 200;
+    var width = 6;
+    var height = 5;
+    var steps = 20;
     var scale = Math.floor(100/width);
     
     can.width = width * scale;
